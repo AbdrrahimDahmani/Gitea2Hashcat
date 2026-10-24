@@ -50,21 +50,30 @@ def main():
         description="Extract user hashes from a Gitea SQLite database and convert them into Hashcat-compatible format."
     )
     parser.add_argument(
-        "database", 
+        "database",
         help="Path to the Gitea SQLite database file."
+    )
+    parser.add_argument(
+        "--hashcat",
+        action="store_true",
+        help="Output machine-readable lines ('user:sha256:iter:salt:hash') ready to feed to hashcat (mode 10900, use --username to strip the user field)."
     )
 
     args = parser.parse_args()
-    
+
     users = fetch_gitea_user_data(args.database)
     if not users:
         print("No user found.")
         return
 
-    print("Converted Hashes for Hashcat:")
+    if not args.hashcat:
+        print("Converted Hashes for Hashcat:")
     for name, email, passwd, salt in users:
         converted_hash = gitea2hashcat(salt, passwd)
-        if converted_hash:
+        if args.hashcat:
+            if converted_hash:
+                print(f"{name}:{converted_hash}")
+        elif converted_hash:
             print(f"User: {name} ({email}) -> {converted_hash}")
         else:
             print(f"Failed to convert hash for user: {name}")
